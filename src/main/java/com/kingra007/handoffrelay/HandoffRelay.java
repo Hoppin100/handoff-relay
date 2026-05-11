@@ -47,6 +47,15 @@ import java.util.UUID;
 public class HandoffRelay implements ModInitializer {
 	public static final String MOD_ID = "handoff-relay";
 
+	/*
+	 * Runtime timer/player tracking.
+	 *
+	 * TURN_SECONDS is the default fallback turn length.
+	 * remainingTicks tracks the active player's current timer.
+	 * activePlayer stores the UUID of the current active participant.
+	 * endingDueToTimer prevents disconnect saves from overriding expiry state.
+	 */
+
 	private static final int TURN_SECONDS = 60 * 60; // 60 * 60
 	private static int remainingTicks = TURN_SECONDS * 20;
 	private static UUID activePlayer = null;
@@ -64,11 +73,33 @@ public class HandoffRelay implements ModInitializer {
 
 	@Override
 	public void onInitialize() {
+
+		/*
+		 * Console startup ownership banner.
+		 *
+		 * Displays developer attribution and ownership
+		 * information during server initialization.
+		 */
+
 		System.out.println("====================================");
 		System.out.println("Handoff Relay");
 		System.out.println("Developed by Kingra007");
 		System.out.println("All Rights Reserved");
 		System.out.println("====================================");
+
+		// ===== COMMAND REGISTRATION =====
+
+		/*
+		 * Registers handoff management commands.
+		 *
+		 * /handoff spectator <name>
+		 * - allows the original creator to assign one spectator account
+		 *
+		 * /handoff time <minutes>
+		 * - allows the original creator to configure future player turn length
+		 *
+		 * Both commands are restricted to the original handoff creator.
+		 */
 
 		CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
 			dispatcher.register(
@@ -127,6 +158,19 @@ public class HandoffRelay implements ModInitializer {
 							)
 			);
 		});
+
+		// ===== PLAYER LIFECYCLE EVENTS =====
+
+		/*
+		 * Handles player join behaviour.
+		 *
+		 * Enforces:
+		 * - only one active player
+		 * - approved spectator bypass
+		 * - expired player lockout
+		 * - timer resume for reconnecting players
+		 * - fresh timer for new handoff players
+		 */
 
 		ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
 			ServerPlayer player = handler.player;
@@ -200,6 +244,14 @@ public class HandoffRelay implements ModInitializer {
 			}
 		});
 
+		/*
+		 * Handles player disconnects.
+		 *
+		 * Saves active player state on normal disconnect.
+		 * Skips normal disconnect saving when the disconnect was caused
+		 * by timer expiry, so expiry state is not overwritten.
+		 */
+
 		ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
 			ServerPlayer player = handler.player;
 
@@ -212,6 +264,16 @@ public class HandoffRelay implements ModInitializer {
 				endingDueToTimer = false;
 			}
 		});
+
+		// ===== TIMER LOOP =====
+
+		/*
+		 * Main timer loop.
+		 *
+		 * Runs once per server tick while an active player exists.
+		 * Decrements the timer, displays action bar updates,
+		 * saves final state on expiry, and disconnects expired players.
+		 */
 
 		ServerTickEvents.END_SERVER_TICK.register(server -> {
 			if (activePlayer == null) return;
@@ -267,6 +329,8 @@ public class HandoffRelay implements ModInitializer {
 	 * Used continuously during runtime to ensure
 	 * the active player remains in survival mode.
 	 */
+
+	// ===== HELPER METHODS =====
 
 	// TODO: ENABLE FOR PRODUCTION
 	private static void lockPlayer(ServerPlayer player) {
@@ -416,6 +480,8 @@ public class HandoffRelay implements ModInitializer {
 		ResourceKey<Level> spawnDimensionKey = dimensionFromString(state.spawnDimension);
 		setRespawnReflect(player, spawnDimensionKey, new BlockPos(state.spawnX, state.spawnY, state.spawnZ), state.spawnAngle, state.spawnForced);
 	}
+
+	// ===== DIMENSION / REFLECTION HELPERS =====
 
 	private static String dimensionToString(ResourceKey<Level> key) {
 		if (key == Level.NETHER) return "minecraft:the_nether";
