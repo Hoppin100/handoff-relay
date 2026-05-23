@@ -60,6 +60,7 @@ public class HandoffRelay implements ModInitializer {
 	private static int remainingTicks = TURN_SECONDS * 20;
 	private static UUID activePlayer = null;
 	private static boolean endingDueToTimer = false;
+	private static boolean lanTamperDetected = false;
 
 	/*
 	 * Initializes all runtime systems and event handlers.
@@ -86,6 +87,8 @@ public class HandoffRelay implements ModInitializer {
 		System.out.println("Developed by Kingra007");
 		System.out.println("All Rights Reserved");
 		System.out.println("====================================");
+
+		lanTamperDetected = false;
 
 		// ===== COMMAND REGISTRATION =====
 
@@ -301,6 +304,24 @@ public class HandoffRelay implements ModInitializer {
 				return;
 			}
 
+			if (isLanOpen(server) && player.gameMode.getGameModeForPlayer() != GameType.SURVIVAL) {
+				lanTamperDetected = true;
+
+				saveState(player, server);
+
+				HandoffState state = HandoffState.load(server);
+				state.integrityLocked = true;
+				state.integrityLockReason = "LAN/cheat tampering detected.";
+				state.save(server);
+
+				player.connection.disconnect(Component.literal(
+						"Handoff Relay integrity lock: LAN/cheat tampering detected."
+				));
+
+				activePlayer = null;
+				return;
+			}
+
 			lockPlayer(player);
 
 			remainingTicks--;
@@ -498,6 +519,14 @@ public class HandoffRelay implements ModInitializer {
 	}
 
 	// ===== DIMENSION / REFLECTION HELPERS =====
+
+	private static boolean isLanOpen(MinecraftServer server) {
+		try {
+			return server.isPublished();
+		} catch (Exception ignored) {
+			return false;
+		}
+	}
 
 	private static String dimensionToString(ResourceKey<Level> key) {
 		if (key == Level.NETHER) return "minecraft:the_nether";

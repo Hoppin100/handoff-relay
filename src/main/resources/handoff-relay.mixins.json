@@ -3,7 +3,8 @@
 	"package": "com.kingra007.handoffrelay.mixin",
 	"compatibilityLevel": "JAVA_21",
 	"mixins": [
-		"ExampleMixin"
+		"ExampleMixin",
+		"BlockCommandMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

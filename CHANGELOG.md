@@ -58,5 +58,64 @@ All notable changes to Handoff Relay will be documented in this file.
 
 - Custom HUD above hotbar
 - Full public release packaging
-- Final Modrinth release setup
 - Expanded user-facing configuration
+
+## [1.0.0-beta] - 2026-05-23
+
+### Added
+
+- Phase 13.1 save integrity protection
+- Automatic handoff_state backup restoration
+- World initialization integrity marker
+- Integrity lock enforcement for missing/corrupt handoff state
+- Dangerous command tamper detection
+- Command abuse interception for:
+    - /gamemode
+    - /give
+    - /tp
+    - /teleport
+    - /effect
+    - /enchant
+    - /summon
+    - /setblock
+    - /fill
+    - /item
+    - /experience
+    - /xp
+    - /advancement
+    - /op
+    - /deop
+- LAN / cheat escalation detection
+- Anti-tamper disconnect enforcement
+
+### External Validation
+
+Confirmed:
+- World transfer loading
+- External install/load success
+- Inventory restoration
+- Armour/offhand restoration
+- Ender chest restoration
+- XP restoration
+- Health/hunger restoration
+- Potion effect restoration
+- Selected hotbar restoration
+- Timer persistence
+- Second-account transferred world join
+- Save deletion recovery from backup
+- Dangerous command blocking
+- Cheat escalation prevention
+
+Partially validated:
+- Second-player expiry handoff lifecycle
+- Spectator live testing
+
+Known remaining:
+- Full deletion exploit:
+  deleting:
+  handoff_state.dat
+  handoff_state_backup.dat
+  handoff_world_initialized.lock
+  may still reset world state
+- Controlled creator reset command
+- Final exploit regression suite
